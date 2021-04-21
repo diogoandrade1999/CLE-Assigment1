@@ -2,7 +2,6 @@
 #include <pthread.h>
 #include <string.h>
 #include <unistd.h>
-#include <ctype.h>
 #include "sharedregion.h"
 #include "partfileinfo.h"
 #include "convertchar.h"
@@ -88,7 +87,7 @@ int getDataChunk(int threadId, unsigned char *buf, PARTFILEINFO *partialInfo)
             break;
         }
         // find end position of last string
-        else if (isspace(buff) || ispunct(buff))
+        else if (isSpace(buff) || isSeparation(buff) || isPunct(buff))
             endPosLastStr = i;
 
         *(buf + i) = buff;
@@ -127,11 +126,11 @@ void savePartialResults(int threadId, PARTFILEINFO *partialInfo)
     // store count of words
     storedInfo->countWords += partialInfo->countWords;
 
-    for (int i = 0; i < 10; i++)
+    for (int i = 0; i < 30; i++)
     {
         storedInfo->countWordsSize[i] += partialInfo->countWordsSize[i];
 
-        for (int k = 0; k < 10; k++)
+        for (int k = 0; k < 30; k++)
             storedInfo->countConsonants[i][k] += partialInfo->countConsonants[i][k];
     }
 
@@ -144,35 +143,48 @@ void printProcessingResults()
     // access critical area
     pthread_mutex_lock(&sharedRegion.lock);
 
+    // print processing results
     for (int i = 0; i < sharedRegion.nFileNames; i++)
     {
         printf("File name: %s\n", sharedRegion.fileNames[i]);
         printf("\tTotal number of words: %d \n", sharedRegion.fileInfos[i].countWords);
         printf("\tSize of the biggest word: %d \n", sharedRegion.fileInfos[i].biggestWord);
 
-        printf("\n\tNumber of words per size:\n\t\tsize:");
-        for (int j = 1; j <= sharedRegion.fileInfos[i].biggestWord; j++)
-            printf("\t%d ", j);
-        printf("\n\t\tcount:");
-        for (int j = 1; j <= sharedRegion.fileInfos[i].biggestWord; j++)
-            printf("\t%d ", sharedRegion.fileInfos[i].countWordsSize[j]);
+        printf("\n\tNumber of words per size:\n");
+        for (int j = 0; j < 3; j++)
+        {
+            if (j == 0)
+                printf("\t\tsize:");
+            else if (j == 1)
+                printf("\n\t\tcount:");
+            else
+                printf("\n\t\t%c:", '%');
+            for (int k = 1; k <= sharedRegion.fileInfos[i].biggestWord; k++)
+                if (j == 0)
+                    printf("\t%d ", k);
+                else if (j == 1)
+                    printf("\t%d ", sharedRegion.fileInfos[i].countWordsSize[k]);
+                else
+                    printf("\t%3.2f ", ((double)sharedRegion.fileInfos[i].countWordsSize[k] / (double)sharedRegion.fileInfos[i].countWords) * 100);
+        }
         printf("\n\n");
 
-        printf("\n\tNumber of consonants per words per size:\n\t\tsize:");
+        printf("\n\tFrequency of consonants per words per size:\n\t\tsize:");
         for (int j = 1; j <= sharedRegion.fileInfos[i].biggestWord; j++)
             printf("\t%d ", j);
-        for (int j = 1; j <= sharedRegion.fileInfos[i].biggestWord; j++)
+        for (int j = 0; j <= sharedRegion.fileInfos[i].biggestWord; j++)
         {
             printf("\n\t");
             for (int k = 0; k <= sharedRegion.fileInfos[i].biggestWord; k++)
-            {
                 if (k == 0)
                     printf("\t%d ", j);
                 else if (k >= j)
-                    printf("\t%d ", sharedRegion.fileInfos[i].countConsonants[j][k]);
+                    if (sharedRegion.fileInfos[i].countConsonants[k][j] > 0 && sharedRegion.fileInfos[i].countWordsSize[k] > 0)
+                        printf("\t%1.2f ", ((double)sharedRegion.fileInfos[i].countConsonants[k][j] / (double)sharedRegion.fileInfos[i].countWordsSize[k]));
+                    else
+                        printf("\t%d ", 0);
                 else
                     printf("\t ");
-            }
         }
         printf("\n\n");
     }

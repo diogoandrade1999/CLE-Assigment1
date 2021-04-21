@@ -27,8 +27,12 @@ unsigned char convertChar(unsigned char *buf, int *i)
         {
             (*i)++;
             c = buf[*i];
-            if (c == 0x93 || c == 0x94 || c == 0x98 || c == 0x99 || c == 0x9c || c == 0x9d || c == 0xb6 || c == 0xb9)
-                c = ' ';
+            if (c == 0x9c || c == 0x9d)
+                c = '-';
+            if (c == 0x93 || c == 0xa6)
+                c = '.';
+            if (c == 0x98 || c == 0x99)
+                c = 0x27;
         }
     }
     else if (c == 0xc2)
@@ -66,6 +70,34 @@ int isConsonant(char c)
     if (c == 'a' || c == 'e' || c == 'i' || c == 'o' || c == 'u')
         return 1;
     if (c == 'A' || c == 'E' || c == 'I' || c == 'O' || c == 'U')
+        return 1;
+    return 0;
+}
+
+int isSpace(char c)
+{
+    if (c == ' ' || c == '\t' || c == '\n' || c == 0xa)
+        return 1;
+    return 0;
+}
+
+int isSeparation(char c)
+{
+    if (c == '-' || c == '"' || c == '[' || c == ']' || c == '(' || c == ')')
+        return 1;
+    return 0;
+}
+
+int isPunct(char c)
+{
+    if (c == '.' || c == ',' || c == ':' || c == ';' || c == '?' || c == '!')
+        return 1;
+    return 0;
+}
+
+int isMerge(char c)
+{
+    if (c == 0x27 || c == '_')
         return 1;
     return 0;
 }

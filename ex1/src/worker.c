@@ -1,7 +1,6 @@
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
-#include <ctype.h>
 #include "worker.h"
 #include "partfileinfo.h"
 #include "sharedregion.h"
@@ -27,7 +26,7 @@ void *workerJob(void *arg)
 
 void processDataChunk(unsigned char *buf, PARTFILEINFO *partialInfo)
 {
-    int posStartWord, wordSize, countConsonantsWord;
+    int wordSize, countConsonantsWord;
     unsigned char buff, lastBuff;
 
     // init counters
@@ -41,7 +40,6 @@ void processDataChunk(unsigned char *buf, PARTFILEINFO *partialInfo)
     }
 
     // find words
-    posStartWord = -1;
     wordSize = 0;
     countConsonantsWord = 0;
     lastBuff = ' ';
@@ -51,12 +49,10 @@ void processDataChunk(unsigned char *buf, PARTFILEINFO *partialInfo)
         buff = convertChar(buf, &z);
 
         // in word
-        if (!isspace(buff) && ((buff == '_' && posStartWord != -1) || !ispunct(buff)))
+        if (!isSpace(buff) && !isPunct(buff) && !isSeparation(buff))
         {
-            //printf("%c", buff);
             // init of word
-            if (isspace(lastBuff) || ispunct(lastBuff))
-                posStartWord = i;
+            //if (isSpace(lastBuff) || isPunct(lastBuff) || isSeparation(lastBuff))
 
             // check if is a consonant
             if (isConsonant(buff))
@@ -68,7 +64,6 @@ void processDataChunk(unsigned char *buf, PARTFILEINFO *partialInfo)
             // end of word
             if (z >= partialInfo->textSize - 1)
             {
-                //printf(" %d %d\n", wordSize, countConsonantsWord);
                 // check if is the biggest word
                 if (partialInfo->biggestWord < wordSize)
                     partialInfo->biggestWord = wordSize;
@@ -81,9 +76,8 @@ void processDataChunk(unsigned char *buf, PARTFILEINFO *partialInfo)
         else
         {
             // end of word
-            if (!isspace(lastBuff) && !ispunct(lastBuff))
+            if (!isSpace(lastBuff) && !isPunct(lastBuff) && !isSeparation(lastBuff))
             {
-                //printf(" %d %d\n", wordSize, countConsonantsWord);
                 // check if is the biggest word
                 if (partialInfo->biggestWord < wordSize)
                     partialInfo->biggestWord = wordSize;
@@ -93,7 +87,6 @@ void processDataChunk(unsigned char *buf, PARTFILEINFO *partialInfo)
                 partialInfo->countConsonants[wordSize][countConsonantsWord]++;
                 wordSize = 0;
                 countConsonantsWord = 0;
-                posStartWord = -1;
             }
         }
         lastBuff = buff;
