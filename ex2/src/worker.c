@@ -1,6 +1,5 @@
-#include <stdlib.h>
-#include <stdio.h>
 #include "worker.h"
+#include "sharedregion.h"
 
 void *workerJob(void *arg)
 {
@@ -9,17 +8,11 @@ void *workerJob(void *arg)
 
     threadId = *(int *)arg;
 
-    while (processConvPoint(threadId, &fileId, &n, x, y, &point) != 1)
+    while (processConvPoint(threadId, &fileId, &n, &x, &y, &point) != 1)
     {
-        //printf("%f %f\n", x[1023], y[1023]);
-        //val = computeValue(n, x, y, point);
+        val = computeValue(n, x, y, point);
         savePartialResult(threadId, fileId, point, val);
     }
-
-    // clean
-    free(x);
-    free(y);
-
     return NULL;
 }
 

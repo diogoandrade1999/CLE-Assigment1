@@ -1,5 +1,5 @@
+#include <stdio.h>
 #include <stdlib.h>
-#include <pthread.h>
 #include "sharedregion.h"
 #include "partfileinfo.h"
 
@@ -36,6 +36,7 @@ void storeFileNames(int nFileNames, char *fileNames[])
             exit(1);
         }
 
+        // read file data
         fread(&partialInfo.n, sizeof(int), 1, fp);
 
         partialInfo.x = (double *)malloc(partialInfo.n * sizeof(double));
@@ -54,7 +55,7 @@ void storeFileNames(int nFileNames, char *fileNames[])
     }
 }
 
-int processConvPoint(int threadId, int *fileId, int *n, double *x, double *y, int *point)
+int processConvPoint(int threadId, int *fileId, int *n, double **x, double **y, int *point)
 {
     // access critical area
     pthread_mutex_lock(&sharedRegion.lock);
@@ -70,31 +71,16 @@ int processConvPoint(int threadId, int *fileId, int *n, double *x, double *y, in
     // check is the first time on this file
     if (sharedRegion.nReaded == 0)
     {
+        //get file info
         *fileId = sharedRegion.fileIdProcessed;
         *n = sharedRegion.fileInfos[sharedRegion.fileIdProcessed].n;
-        if (*fileId == 0)
-        {
-            x = (double *)malloc(*n * sizeof(double));
-            y = (double *)malloc(*n * sizeof(double));
-        }
-        else
-        {
-            x = (double *)realloc(x, *n * sizeof(double));
-            y = (double *)realloc(y, *n * sizeof(double));
-        }
-
-        for (int i = 0; i < *n; i++)
-        {
-            x[i] = sharedRegion.fileInfos[sharedRegion.fileIdProcessed].x[i];
-            y[i] = sharedRegion.fileInfos[sharedRegion.fileIdProcessed].y[i];
-            //printf("%f %f\n", x[i], y[i]);
-        }
+        *x = sharedRegion.fileInfos[sharedRegion.fileIdProcessed].x;
+        *y = sharedRegion.fileInfos[sharedRegion.fileIdProcessed].y;
     }
-    //printf("%f %f\n", x[1023], y[1023]);
-
     *point = sharedRegion.nReaded;
 
     sharedRegion.nReaded++;
+    // check if reach end of file
     if (*n < sharedRegion.nReaded)
     {
         sharedRegion.fileIdProcessed++;
@@ -134,7 +120,7 @@ void printProcessingResults()
         for (int k = 0; k < sharedRegion.fileInfos[i].n; k++)
             if (sharedRegion.fileInfos[i].valCurrent[k] != sharedRegion.fileInfos[i].valPrevious[k])
             {
-                printf("\tResult: Expected result not found! [%f - %f]\n", sharedRegion.fileInfos[i].valCurrent[k], sharedRegion.fileInfos[i].valPrevious[k]);
+                printf("\tResult: Expected result not found! [Expected: %f - Obtained: %f]\n", sharedRegion.fileInfos[i].valPrevious[k], sharedRegion.fileInfos[i].valCurrent[k]);
                 foundExpectedRes = 0;
                 break;
             }

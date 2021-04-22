@@ -8,7 +8,7 @@
 int main(int argc, char *argv[])
 {
     pthread_t *threads;
-    time_t t0, t1;
+    clock_t t0, t1;
     int t, nThreads, nFileNames;
 
     // processCommandLine
@@ -29,7 +29,7 @@ int main(int argc, char *argv[])
     }
 
     //defineTimeOrigin
-    time(&t0);
+    t0 = clock();
 
     storeFileNames(nFileNames, fileNames);
 
@@ -48,11 +48,12 @@ int main(int argc, char *argv[])
     printProcessingResults();
 
     //getTime
-    time(&t1);
+    t1 = clock();
 
-    //printProcessingTime(
-    printf("Processing Time: %ld\n", t1 - t0);
+    //printProcessingTime
+    printf("Processing Time: %f\n", (double)(t1 - t0) / CLOCKS_PER_SEC);
 
+    // clean space
     free(threads);
 
     return 0;
