@@ -1,3 +1,4 @@
+#include <stdio.h>
 #include <stdlib.h>
 #include <pthread.h>
 #include <string.h>
@@ -22,6 +23,7 @@ void storeFileNames(int nFileNames, char *fileNames[])
     sharedRegion.fileNames = fileNames;
     sharedRegion.fileIdProcessed = 0;
     sharedRegion.fp = NULL;
+    sharedRegion.sizeReaded = 0;
     sharedRegion.fileInfos = (PARTFILEINFO *)malloc(nFileNames * sizeof(PARTFILEINFO));
     for (int i = 0; i < nFileNames; i++)
     {
@@ -66,7 +68,6 @@ int getDataChunk(int threadId, unsigned char *buf, PARTFILEINFO *partialInfo)
             printf("ERROR: Failed to open the file!\n");
             exit(1);
         }
-        sharedRegion.sizeReaded = 0;
     }
 
     // save partial data info file
